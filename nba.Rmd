@@ -1,0 +1,22 @@
+---
+title: "Analysis of NBA Regular Season to Predict Outcome of 2018 Playoffs"
+author: "Chanel Aquino, Dario Molina, Evert Rodriguez"
+date: "May 7, 2018"
+output: html_document
+---
+
+```{r global_options, message=FALSE, warning=FALSE, include=FALSE}
+knitr::opts_chunk$set(prompt=TRUE, comment="", echo=T)
+```
+
+### Introduction / Objective
+
+### Preprocessing
+```{r}
+```
+
+### Analysis / Visualization
+```{r}
+```
+
+### Conclusion
