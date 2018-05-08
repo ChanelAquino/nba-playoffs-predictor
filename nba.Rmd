@@ -9,12 +9,68 @@ output: html_document
 knitr::opts_chunk$set(prompt=TRUE, comment="", echo=T)
 ```
 
-### Introduction / Objective
-
-### Preprocessing
+### Introduction / Data
+__championsdata.csv__ contains game-by-game team totals for the championship team from every finals game between 1980 and 2017. __runnerupsdata.csv__ contains game-by-game team totals for the runner-up team from every finals game between 1980 and 2017. The 1980 NBA Finals was the first Finals series since the NBA added the three point line. Both these data sets were downloaded from the [NBA Finals Team Stats](https://www.kaggle.com/daverosenman/nba-finals-team-stats) on [Kaggle.com](kaggle.com). __NBATeamData.csv__ contains current regular season averages per game. 
 ```{r}
+reg.ssn = read.csv("/Users/chanel/School/383_cst/projects/2/nba-playoffs-predictor/NBATeamData.csv", na.strings=c('N/A', 'NA'))
+champs = read.csv("/Users/chanel/School/383_cst/projects/2/nba-playoffs-predictor/nba-finals-team-stats/championsdata.csv", na.strings=c('N/A', 'NA'))
+r.ups = read.csv("/Users/chanel/School/383_cst/projects/2/nba-playoffs-predictor/nba-finals-team-stats/runnerupsdata.csv", na.strings=c('N/A', 'NA'))
 ```
 
+### Preprocessing / Cleaning
+```{r}
+names(reg.ssn) = tolower(names(reg.ssn))
+names(champs) = tolower(names(champs))
+names(r.ups) = tolower(names(r.ups))
+
+# change reg.ssn column names to match champs and r.ups column names
+names(reg.ssn)[3] = 'team'
+names(reg.ssn)[15] = 'fg' # field goals made
+names(reg.ssn)[17] = 'fgp' # field goal percentage
+names(reg.ssn)[18] = 'tp' # 3-point field goals made
+names(reg.ssn)[19] = 'tpa' # 3-point field goals attempted
+names(reg.ssn)[20] = 'tpp' # 3-point percentage
+names(reg.ssn)[21] = 'ft' # free throws made
+names(reg.ssn)[23] = 'ftp' # free throw percentage
+names(reg.ssn)[24] = 'orb' # offensive rebounds
+names(reg.ssn)[25] = 'drb' # defensive rebounds
+names(reg.ssn)[26] = 'trb' # total rebounds
+
+
+# fix spelling errors
+unique(champs$team)
+champs$team[champs$team == '\'Heat\''] = 'Heat'
+champs$team[champs$team == 'Warriorrs'] = 'Warriors'
+champs$team = factor(champs$team)
+```
+
+
+### Missing Data
+90% of the values in the __nba_finals_appearance__ column in the __reg.ssn__ data set are missing. Therefore, that entire column was removed.
+```{r}
+# show NA percentages per column
+# data - a data frame
+show.na.pct = function(data) {
+  na.vals = apply(data, 2, function(x) mean(is.na(x)))
+  data.frame(na.vals)
+}
+
+print("percentage of NA values in reg.ssn")
+show.na.pct(reg.ssn)
+reg.ssn[['nba_finals_appearance']] = NULL # remove nba_finals_appearance column
+
+print("percentage of NA values in champs")
+show.na.pct(champs)
+
+print("percentage of NA values in r.ups")
+show.na.pct(r.ups)
+
+
+diff.cols = setdiff(names(reg.ssn), names(champs))
+diff.cols # show different columns
+# TODO: remove unneeded columns from reg.ssn
+# reg.ssn[diff.cols] = NULL # remove different columns
+```
 ### Analysis / Visualization
 ```{r}
 ```
