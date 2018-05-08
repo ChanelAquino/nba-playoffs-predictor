@@ -9,11 +9,14 @@ output: html_document
 knitr::opts_chunk$set(prompt=TRUE, comment="", echo=T)
 ```
 
-### Introduction / Data
-__championsdata.csv__ contains game-by-game team totals for the championship team from every finals game between 1980 and 2017. The 1980 NBA Finals was the first Finals series since the NBA added the three point line. Both these data sets were downloaded from the [NBA Finals Team Stats](https://www.kaggle.com/daverosenman/nba-finals-team-stats) on [Kaggle.com](kaggle.com). __NBATeamData.csv__ contains current regular season averages per game. 
+### Introduction / Objective
+In this project, we will look into NBA Statistics data, and analyze in detail what this data represents.  We will make graphs, to visually analyze and find patterns, to make a prediction of which two teams will make it to NBA Playoffs final.
+
+For this project, we are using three different data sets. The data set championsdata.csv contains game-by-game team totals for the championship team from every finals game between 1980 and 2017. As well as runnerupsdata.csv contains game-by-game team totals for the runner-up team from every finals game between 1980 and 2017. The 1980 NBA Finals was the first Finals series since the NBA added the three point line. Both these data sets were downloaded from the NBA Finals Team Stats on Kaggle.com. The third data set NBATeamData.csv contains current regular season averages per game. This data set was obtained from NBA.com(http://stats.nba.com/teams/traditional/?sort=W_PCT&dir=-1&Season=2017-18&SeasonType=Regular%20Season), where it has records of each team in the NBA as early as the 1950s. The NBATeamData.csv has 1447 rows, 34 columns with a total amount of 49198 entries. It is updated weekly after every after every game played(only during nba season).
+
 ```{r}
-reg.ssn = read.csv("/Users/chanel/School/383_cst/projects/2/nba-playoffs-predictor/NBATeamData.csv", na.strings=c('N/A', 'NA'))
-champs = read.csv("/Users/chanel/School/383_cst/projects/2/nba-playoffs-predictor/nba-finals-team-stats/championsdata.csv", na.strings=c('N/A', 'NA'))
+reg.ssn = read.csv("~/nba-playoffs-predictor/NBATeamData.csv", na.strings=c('N/A', 'NA'))
+champs = read.csv("~/nba-playoffs-predictor/nba-finals-team-stats/championsdata.csv", na.strings=c('N/A', 'NA'))
 ```
 
 ### Missing Data
@@ -226,6 +229,8 @@ grid()
 From the precision-recall curves below, we can see that model 2 shows a general inverse relationship between precision and recall. In other words, for our second logistic regression model, there is an overall decline in precision as recall rates increase. 
 
 The curve for model 1, overall, follows this same trend. However, there seems to be a visually anomalous area in the curve where a relatively high precision (about 85%) is paired with an also high recall rate (about 80%). Referring to the previous two graphs, we can see that these precision and recall rates can be achieved with a threshold value of about 70%.
+
+
 ```{r}
 # precision-recall curve
 plot(tpr2, precision2, main="precision-recall curve", col='cornflowerblue', type="l", xlab="recall", ylab="precision")
@@ -244,4 +249,65 @@ legend("topleft", fill=c('red4', 'cornflowerblue'), legend=c('model 1', 'model 2
 grid()
 ```
 
-### Conclusion
+```{r}
+set.seed(132)
+library(rpart)
+library(rpart.plot)
+library(maptree)
+library(caret)
+
+reg.ssn$win = ifelse(reg.ssn$win_pct < 0.5 ,0,1)
+regularSeason = reg.ssn
+```
+
+###Data Visualization
+
+Total wins of each team since joining the nba
+```{r}
+x = aggregate(wins ~ team, regularSeason,sum)
+par(mar=c(7,3.8,2.5,0))
+plot(x,las=3,type='s',xlab=" ",ylab="Total Number of Wins", main="Total Number of Wins per Team")
+```
+
+Some Important attributes from data set
+```{r}
+cols = c('win','losses', 'ft', 'orb', 'drb', 'ast', 'stl', 'blk', 'tov', 'pts')
+plot(regularSeason[,cols])
+
+cor(regularSeason[,cols])
+```
+
+###Building Classification Tree
+```{r}
+tr_rows = sample(1:nrow(regularSeason), .75*nrow(regularSeason))
+tr_dat = regularSeason[tr_rows,]
+te_dat = regularSeason[-tr_rows,]
+
+treeFit = rpart(win ~ gp + po_wins + pts + + ast,data=tr_dat, method="class")
+
+#treeFit = rpart(win ~ fg + tp + ft + ast, data=tr_dat, method="class")
+
+prp(treeFit, extra=106, varlen=5,
+ main="Classification Tree for NBA Teams",
+ box.col=c("palegreen", "pink")[treeFit$frame$yval])
+
+```
+
+###Classifying Test Data
+```{r}
+
+predicted = predict(treeFit, te_dat, type="prob")
+predictors = as.data.frame(predicted)
+names(predictors) = c("zero","one")
+y = predictors$one
+predicts = as.numeric(y > 0.5)
+actuals = te_dat$win
+confusion_matrix=table(actuals, predicts)
+confusion_matrix
+
+ succ_rate = mean(predicts == actuals)
+ round(succ_rate, 3)
+```
+
+###Conclusion
+ 
