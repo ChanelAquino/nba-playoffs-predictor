@@ -10,13 +10,71 @@ knitr::opts_chunk$set(prompt=TRUE, comment="", echo=T)
 ```
 
 ### Introduction / Objective
+In this project, we will look into NBA Statistics data, and analyze in detail what this data represents.  We will make graphs, to visually analyze and find patterns, to make a prediction of which two teams will make it to NBA Playoffs final.
+
+For this project, we are using three different data sets. The data set championsdata.csv contains game-by-game team totals for the championship team from every finals game between 1980 and 2017. As well as runnerupsdata.csv contains game-by-game team totals for the runner-up team from every finals game between 1980 and 2017. The 1980 NBA Finals was the first Finals series since the NBA added the three point line. Both these data sets were downloaded from the NBA Finals Team Stats on Kaggle.com. The third data set NBATeamData.csv contains current regular season averages per game. This data set was obtained from NBA.com(http://stats.nba.com/teams/traditional/?sort=W_PCT&dir=-1&Season=2017-18&SeasonType=Regular%20Season), where it has records of each team in the NBA as early as the 1950s. The NBATeamData.csv has 1447 rows, 34 columns with a total amount of 49198 entries. It is updated weekly after every after every game played(only during nba season).
 
 ### Preprocessing
 ```{r}
+set.seed(132)
+library(rpart)
+library(rpart.plot)
+library(maptree)
+library(caret)
+
+regularSeason = read.csv("~/nba-playoffs-predictor/NBATeamData.csv",na.strings=c('N/A', 'NA'))
+
+names(regularSeason) = tolower(names(regularSeason))
 ```
 
-### Analysis / Visualization
+###Data Visualization
+
+Total wins of each team since joining the nba
 ```{r}
+x = aggregate(wins ~ team_name, regularSeason,sum)
+par(mar=c(7,3.8,2.5,0))
+plot(x,las=3,type='s',xlab=" ",ylab="Total Number of Wins", main="Total Number of Wins per Team")
+```
+
+Division Rank for each team
+```{r}
+y = aggregate(div_rank ~ team_name, regularSeason, sum)
+par(mar=c(7,3.8,2.5,0))
+plot(y, las=3, type='s', xlab=" ",ylab="Division Rank", main="Division Rank per Team")
+```
+
+Some Important attributes from data set
+```{r}
+rows = c("wins","losses","pts_rank","win_pct","div_rank")
+plot(regularSeason[,rows])
+```
+
+###Building Classification Tree
+```{r}
+tr_rows = sample(1:nrow(regularSeason), .75*nrow(regularSeason))
+tr_dat = regularSeason[tr_rows,]
+te_dat = regularSeason[-tr_rows,]
+
+treeFit = rpart(wins ~ win_pct + pts_rank + losses,data=tr_dat, method="class")
+
+prp(treeFit, extra=106, varlen=5,
+ main="Classification Tree for NBA Teams",
+ box.col=c("palegreen", "pink")[treeFit$frame$yval])
+
+```
+
+###Classifying Test Data
+```{r}
+predicted = predict(treeFit, te_dat, type="class")
+actuals = te_dat$wins
+
+confusion_matrix = table(actuals, predicted)
+confusion_matrix
+```
+
+```{r}
+ succ_rate = mean(predicted == actuals)
+ round(succ_rate, 3)
 ```
 
 ### Conclusion
