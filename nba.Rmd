@@ -88,22 +88,42 @@ r.ups[['mp']] = NULL
 pattern = '^20(0[789]|1[[:digit:]])'
 rows = grep(pattern, reg.ssn$year)
 reg.ssn = reg.ssn[rows, ]
-# --
-rows = grep(pattern, champs$year)
-champs = champs[rows,]
-# --
-rows = grep(pattern, r.ups$year)
-r.ups = r.ups[rows,]
+# # --
+# rows = grep(pattern, champs$year)
+# champs = champs[rows,]
+# # --
+# rows = grep(pattern, r.ups$year)
+# r.ups = r.ups[rows,]
 ```
 
 ### Analysis / Visualization
 ```{r}
-cols = c('game', 'win', 'home', 'fg', 'tp', 'ft', 'orb', 'drb', 'ast', 'stl', 'blk', 'tov', 'pf', 'pts', 'ot')
-plot(champs[champs$win == 1, cols]) # correlation between wins + other columns
-plot(r.ups[r.ups$win == 0, cols]) # correlation between losses + other columns
+# 
+# plot(r.ups[r.ups$win == 0, cols]) # correlation between losses + other columns
+# 
+# cols = c('gp', 'wins', 'losses', 'po_wins', 'po_losses', 'fg', 'tp', 'ft', 'orb', 'drb', 'ast', 'stl', 'tov', 'blk', 'pts')
+# plot(reg.ssn[reg.ssn$po_wins >= 1, cols])
+```
 
-cols = c('gp', 'wins', 'losses', 'po_wins', 'po_losses', 'fg', 'tp', 'ft', 'orb', 'drb', 'ast', 'stl', 'tov', 'blk', 'pts')
-plot(reg.ssn[reg.ssn$po_wins >= 1, cols])
+### Logistic Regression 1
+```{r}
+cols = c('game', 'win', 'home', 'fg', 'tp', 'ft', 'orb', 'drb', 'ast', 'stl', 'blk', 'tov', 'pf', 'pts', 'ot')
+plot(champs[, cols]) # correlation between wins + other columns
+tr_rows = sample(1:nrow(champs), .75*nrow(champs))
+tr_dat = champs[tr_rows,]
+te_dat = champs[-tr_rows,]
+lg.fit = glm(win ~ fg + tp + ft + orb + drb, data=tr_dat, family=binomial)
+summary(lg.fit)
+
+actual = te_dat$win
+predicted = predict(lg.fit, newdata=te_dat, type='response')
+thresh = 0.75 
+predicted = as.numeric(predicted > thresh)
+table(actual, predicted)
+```
+
+### Logistic Regression 2
+```{r}
 ```
 
 ### Conclusion
