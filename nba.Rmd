@@ -5,20 +5,19 @@ date: "May 7, 2018"
 output: html_document
 ---
 
-```{r global_options, message=FALSE, warning=FALSE, include=FALSE}
+```{r global_options, message=FALSE, warning=FALSE, include=FALSE, fig.align = "center"}
 knitr::opts_chunk$set(prompt=TRUE, comment="", echo=T)
 ```
 
 ### Introduction / Data
-__championsdata.csv__ contains game-by-game team totals for the championship team from every finals game between 1980 and 2017. __runnerupsdata.csv__ contains game-by-game team totals for the runner-up team from every finals game between 1980 and 2017. The 1980 NBA Finals was the first Finals series since the NBA added the three point line. Both these data sets were downloaded from the [NBA Finals Team Stats](https://www.kaggle.com/daverosenman/nba-finals-team-stats) on [Kaggle.com](kaggle.com). __NBATeamData.csv__ contains current regular season averages per game. 
+__championsdata.csv__ contains game-by-game team totals for the championship team from every finals game between 1980 and 2017. The 1980 NBA Finals was the first Finals series since the NBA added the three point line. Both these data sets were downloaded from the [NBA Finals Team Stats](https://www.kaggle.com/daverosenman/nba-finals-team-stats) on [Kaggle.com](kaggle.com). __NBATeamData.csv__ contains current regular season averages per game. 
 ```{r}
 reg.ssn = read.csv("/Users/chanel/School/383_cst/projects/2/nba-playoffs-predictor/NBATeamData.csv", na.strings=c('N/A', 'NA'))
 champs = read.csv("/Users/chanel/School/383_cst/projects/2/nba-playoffs-predictor/nba-finals-team-stats/championsdata.csv", na.strings=c('N/A', 'NA'))
-r.ups = read.csv("/Users/chanel/School/383_cst/projects/2/nba-playoffs-predictor/nba-finals-team-stats/runnerupsdata.csv", na.strings=c('N/A', 'NA'))
 ```
 
 ### Missing Data
-90% of the values in the __nba_finals_appearance__ column in the __reg.ssn__ data set are missing. Therefore, that entire column was removed.
+Below are percentages of NA values in each column in all three of the data sets.
 ```{r}
 # show NA percentages per column
 # data - a data frame
@@ -26,108 +25,162 @@ show.na.pct = function(data) {
   na.vals = apply(data, 2, function(x) mean(is.na(x)))
   data.frame(na.vals)
 }
-
-print("percentage of NA values in reg.ssn")
-show.na.pct(reg.ssn) * 100
-reg.ssn[['nba_finals_appearance']] = NULL # remove nba_finals_appearance column
-
-print("percentage of NA values in champs")
-show.na.pct(champs) * 100
-champs = na.omit(champs)
-
-print("percentage of NA values in r.ups")
-show.na.pct(r.ups) * 100
-r.ups = na.omit(r.ups)
 ```
 
+#### Percentage of NA Valus in reg.ssn
+```{r}
+show.na.pct(reg.ssn) * 100
+```
+
+#### Percentage of NA Valus in champs
+```{r}
+show.na.pct(champs) * 100
+
+```
+
+Because 90% of the values in the __nba_finals_appearance__ column in the __reg.ssn__ data set are missing, that entire column was removed. Because only a small percentage of data in both the __champs__ data set were missing, all NA values were removed.
+```{r}
+reg.ssn[['nba_finals_appearance']] = NULL # remove nba_finals_appearance column
+champs = na.omit(champs)
+```
 
 ### Preprocessing / Cleaning
-Here, we renamed the column names in the __reg.ssn__ data set to match the column names in the __champs/r.ups__ data set. We also fixed some spelling errors in some columns as well as created a new column __ot__ in the __champs/r.ups__ data set that would indicate whether a game went into overtime or not (true if value in the __minutes played (mp)__ column > 240).
 ```{r}
 names(reg.ssn) = tolower(names(reg.ssn))
 names(champs) = tolower(names(champs))
-names(r.ups) = tolower(names(r.ups))
+```
 
+Column __x__ in the __champs__  data set was removed as values in this column merely uniquely identified rows and did not provide valuable information. Also, some columns from the __reg.ssn__ data set were also removed
+```{r}
 # columns not needed
 champs[['x']] = NULL
-r.ups[['y']] = NULL
+reg.ssn[['team_id']] = NULL
+reg.ssn[['team_city']] = NULL
+reg.ssn[['conf_rank']] = NULL
+reg.ssn[['conf_count']] = NULL
+reg.ssn[['div_rank']] = NULL
+reg.ssn[['div_count']] = NULL
+reg.ssn[['pts_rank']] = NULL
+```
 
-
+Here, we renamed the column names in the __reg.ssn__ data set to match the column names in the __champs__ data set.
+```{r}
 # change reg.ssn column names to match champs and r.ups column names
-names(reg.ssn)[3] = 'team'
-names(reg.ssn)[15] = 'fg' # field goals made
-names(reg.ssn)[17] = 'fgp' # field goal percentage
-names(reg.ssn)[18] = 'tp' # 3-point field goals made
-names(reg.ssn)[19] = 'tpa' # 3-point field goals attempted
-names(reg.ssn)[20] = 'tpp' # 3-point percentage
-names(reg.ssn)[21] = 'ft' # free throws made
-names(reg.ssn)[23] = 'ftp' # free throw percentage
-names(reg.ssn)[24] = 'orb' # offensive rebounds
-names(reg.ssn)[25] = 'drb' # defensive rebounds
-names(reg.ssn)[26] = 'trb' # total rebounds
+names(reg.ssn)[1] = 'team'
+names(reg.ssn)[10] = 'fg' # field goals made
+names(reg.ssn)[12] = 'fgp' # field goal percentage
+names(reg.ssn)[13] = 'tp' # 3-point field goals made
+names(reg.ssn)[14] = 'tpa' # 3-point field goals attempted
+names(reg.ssn)[15] = 'tpp' # 3-point percentage
+names(reg.ssn)[16] = 'ft' # free throws made
+names(reg.ssn)[18] = 'ftp' # free throw percentage
+names(reg.ssn)[19] = 'orb' # offensive rebounds
+names(reg.ssn)[20] = 'drb' # defensive rebounds
+names(reg.ssn)[21] = 'trb' # total rebounds
+```
 
-
-# fix spelling errors
+We also fixed some spelling errors in some columns as well as created a new column __ot__ in the __champs/r.ups__ data set that would indicate whether a game went into overtime or not (true if value in the __minutes played (mp)__ column > 240).
+```{r}
 unique(champs$team)
+# fix spelling errors
 champs$team[champs$team == '\'Heat\''] = 'Heat'
 champs$team[champs$team == 'Warriorrs'] = 'Warriors'
 champs$team = factor(champs$team)
 
 # new column 'ot' to indicate whether game went into overtime
-# 'ot' = 1 if 'mp' > 240; else 0
 champs$ot = FALSE
 champs$ot[champs$mp > 240] = TRUE
-# --
-r.ups$ot = FALSE
-r.ups$ot[r.ups$mp > 240] = TRUE
-# --
 champs[['mp']] = NULL
-r.ups[['mp']] = NULL
+```
 
+Finally, because the __reg.ssn__ data set contained information dating back to 1946, we only kept rows that contained information from the past 10 years.
+```{r}
 # keep only last 10 years of data
 pattern = '^20(0[789]|1[[:digit:]])'
 rows = grep(pattern, reg.ssn$year)
 reg.ssn = reg.ssn[rows, ]
-# # --
-# rows = grep(pattern, champs$year)
-# champs = champs[rows,]
-# # --
-# rows = grep(pattern, r.ups$year)
-# r.ups = r.ups[rows,]
 ```
 
-### Analysis / Visualization
-```{r}
-# 
-# plot(r.ups[r.ups$win == 0, cols]) # correlation between losses + other columns
-# 
-# cols = c('gp', 'wins', 'losses', 'po_wins', 'po_losses', 'fg', 'tp', 'ft', 'orb', 'drb', 'ast', 'stl', 'tov', 'blk', 'pts')
-# plot(reg.ssn[reg.ssn$po_wins >= 1, cols])
-```
 
-### Logistic Regression 1
+### Variables in reg.ssn, champs, r.ups
+Now that all the preprocessing has completed, below is a table explaining what each column represents. __Bolded__ items indicate columns that are in the __reg.ssn__ data set but not in the __champs__ data set. All other items are columns present in all three data sets.  
+
+Column        | Description
+------------- | --------------
+year          | year the series was played
+__gp__        | __games played__
+__wins__      | __wins__
+__losses__    | __losses__
+__win_pct__   | __win percentage__
+__po_wins__   | __playoff wins__
+__po_losses__ | __playoff losses__
+team          | name of the team
+game          | game #
+win           | 1 = win, 0 = loss
+home          | 1 = home team, 0 = away team
+fg            | field goals made
+fga           | field goals attempted
+fgp           | field goal percentage
+tp            | 3-point field goals made
+tpa           | 3-point field goals attempted
+tpp           | 3-point field goal percentage
+ft            | free throws made
+fta           | free throws attempted
+ftp           | free throw percentage
+orb           | offensive rebounds
+drb           | defensive rebounds
+trb           | total rebounds
+ast           | assists
+stl           | steals
+blk           | blocks
+tov           | turnovers
+pf            | personal fouls
+pts           | points scored
+ot            | 1 = overtime, 0 = 240 minutes played
+
+### Analysis
+From the correlation plot below, it is evident that there are strong linear correlations between field goals made (fg), assists (ast), and points scored (pts). There also seems to be a positive linear correlation (albeit a relatively weak one) between defensive rebounds (drb) and blocks (blk).
 ```{r}
-cols = c('game', 'win', 'home', 'fg', 'tp', 'ft', 'orb', 'drb', 'ast', 'stl', 'blk', 'tov', 'pf', 'pts', 'ot')
+cols = c('fg', 'tp', 'ft', 'orb', 'drb', 'ast', 'stl', 'blk', 'tov', 'pf', 'pts')
 plot(champs[, cols]) # correlation between wins + other columns
-tr_rows = sample(1:nrow(champs), .75*nrow(champs))
-tr_dat = champs[tr_rows,]
-te_dat = champs[-tr_rows,]
-lg.fit1 = glm(win ~ fg + tp + ft + orb + drb, data=tr_dat, family=binomial)
+```
+
+The correlation matrix below indicates that while the strongest correlation to defensive rebounds is the number of blocks, this correlation is still relatively weak (about 28%). There are also relatively weak correlations (about 25%) between offensive rebounds (orb) and the number of turnovers (tov). Overall, features are not correlated to each other.
+```{r}
+cor(champs[,cols])
+```
+
+
+### Train / Test Sets
+Here, we have created training and test sets for all the data set.
+```{r}
+set.seed(123)
+tr.rows = sample(1:nrow(champs), .75*nrow(champs))
+tr.dat = champs[tr.rows,]
+te.dat = champs[-tr.rows,]
+```
+
+### Logistic Regression 1: fg, tp, ft, ast
+From this model, we can see that the number of field goals and free throws made highly contribute to predicting the outcome of a game (i.e., win versus loss).
+```{r}
+lg.fit1 = glm(win ~ fg + tp + ft + ast, data=tr.dat, family=binomial)
 summary(lg.fit1)
 
-actual = te_dat$win
-predicted1 = predict(lg.fit1, newdata=te_dat, type='response')
+actual = te.dat$win
+predicted1 = predict(lg.fit1, newdata=te.dat, type='response')
 ```
 
-### Logistic Regression 2
+### Logistic Regression 2: orb, drb, stl, blk, tov
+From this model, we can see that the number of defensive rebounds, steals, and turnovers made highly contribute to predicting the outcome of a game (i.e., win versus loss).
 ```{r}
-lg.fit2 = glm(win ~ ast + stl + blk + tov, data=tr_dat, family=binomial)
+lg.fit2 = glm(win ~ orb + drb + stl + blk + tov, data=tr.dat, family=binomial)
 summary(lg.fit2)
 
-predicted2 = predict(lg.fit2, newdata=te_dat, type='response')
+predicted2 = predict(lg.fit2, newdata=te.dat, type='response')
 ```
 
 ### Model Assessment: Precision, Recall, and ROC Curves
+Below, the true/false positive rates as well as the precision rates for both logistic regression models. The true positive rate indicates the rate at which positive outcomes were predicted positive (i.e., actual wins that were predicted as wins). False positive rates indicate wins that were falsely predicted (i.e., predicted win but actually a loss). The precision rate indicates the rate at which positive predictions were actually positive (i.e., predicted wins were actual wins).
 ```{r}
 thresh = seq(0, 1, length.out=50) # sequence of threshold values
 tpr1 = c() # true positive rate
@@ -139,27 +192,56 @@ precision2 = c()
 
 for(t in thresh) {
   # model 1
-  predicted1 = as.numeric(predicted1 > t)
-  precision1 = c(precision1, sum(predicted1 & actual)/sum(predicted1))
-  tpr1 = c(tpr1, sum(predicted1 & actual)/sum(actual))
-  fpr1 = c(fpr1, sum(predicted1 == 1 & actual == 0)/sum(actual == 0))
+  predicted = as.numeric(predicted1 > t)
+  precision1 = c(precision1, sum(predicted & actual)/sum(predicted))
+  tpr1 = c(tpr1, sum(predicted & actual)/sum(actual))
+  fpr1 = c(fpr1, sum(predicted == 1 & actual == 0)/sum(actual == 0))
   
   # model 2
-  predicted2 = as.numeric(predicted2 > t)
-  precision2 = c(precision2, sum(predicted2 & actual)/sum(predicted2))
-  tpr2 = c(tpr2, sum(predicted2 & actual)/sum(actual))
-  fpr2 = c(fpr2, sum(predicted2 == 1 & actual == 0)/sum(actual == 0))
+  predicted = as.numeric(predicted2 > t)
+  precision2 = c(precision2, sum(predicted & actual)/sum(predicted))
+  tpr2 = c(tpr2, sum(predicted & actual)/sum(actual))
+  fpr2 = c(fpr2, sum(predicted == 1 & actual == 0)/sum(actual == 0))
 }
 ```
 
+As we can see from the precision-threshold graph below, the first logistic regression model (fg, tp, ft, ast as predictors) reached its highest precision rate (about 92%) when the threshold was about 90%. (This threshold means that when a game had a winning probablility of >= 90%, the outcome of the game was a win.) The second model (orb, drb, stl, blk, tov as predictors) reached its highest precision rate (about 94%) when the threshold was about 95%.
 ```{r}
 # precision by threshold
-plot(thresh, precision1, col='red4', type="l", main='precision by threshold', xlab="thresh", ylab="precision", ylim=c(0.68, 0.75))
-par(new=T)
-plot(thresh, precision2, col='cornflowerblue', type='l', xlab="thresh", ylab="precision")
+plot(thresh, precision2, main='precision by threshold', col='cornflowerblue', type='l', xlab="thresh", ylab="precision")
+lines(thresh, precision1, col='red4', type="l")
 legend("topleft", fill=c('red4', 'cornflowerblue'), legend=c('model 1', 'model 2'))
 grid()
 ```
 
+From the graph below, it is evident that recall rate (i.e., true positive rate) of both logistric regression models saw a decline when the threshold was around 50%.
+```{r}
+# recall (i.e., tpr) by threshold
+plot(thresh, tpr2, main='recall by threshold', col='cornflowerblue', type="l", ylab="recall", xlab="thresh")
+lines(thresh, tpr1, col='red4', type="l")
+legend("topright", fill=c('red4', 'cornflowerblue'), legend=c('model 1', 'model 2'))
+grid()
+```
+
+From the precision-recall curves below, we can see that model 2 shows a general inverse relationship between precision and recall. In other words, for our second logistic regression model, there is an overall decline in precision as recall rates increase. 
+
+The curve for model 1, overall, follows this same trend. However, there seems to be a visually anomalous area in the curve where a relatively high precision (about 85%) is paired with an also high recall rate (about 80%). Referring to the previous two graphs, we can see that these precision and recall rates can be achieved with a threshold value of about 70%.
+```{r}
+# precision-recall curve
+plot(tpr2, precision2, main="precision-recall curve", col='cornflowerblue', type="l", xlab="recall", ylab="precision")
+lines(tpr1, precision1, col='red4', type="l")
+legend("topright", fill=c('red4', 'cornflowerblue'), legend=c('model 1', 'model 2'))
+grid()
+thresh = 0.70 # new threshold value 
+```
+
+ROC curves show how true positive rates (TPR) and false positive rates (FPR) change as the threshold changes. The goal is to have a high TPR and low FPR. The curves below support this.  
+```{r}
+# roc curve
+plot(fpr1, tpr1, type="l", col='red4', main='receiver operating characteristic (roc)', xlab="false postive rate", ylab="true positive rate")
+lines(fpr2, tpr2, type="l", col='cornflowerblue', xlab="false postive rate", ylab="true positive rate")
+legend("topleft", fill=c('red4', 'cornflowerblue'), legend=c('model 1', 'model 2'))
+grid()
+```
 
 ### Conclusion
