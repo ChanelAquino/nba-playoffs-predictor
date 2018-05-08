@@ -17,11 +17,41 @@ champs = read.csv("/Users/chanel/School/383_cst/projects/2/nba-playoffs-predicto
 r.ups = read.csv("/Users/chanel/School/383_cst/projects/2/nba-playoffs-predictor/nba-finals-team-stats/runnerupsdata.csv", na.strings=c('N/A', 'NA'))
 ```
 
+### Missing Data
+90% of the values in the __nba_finals_appearance__ column in the __reg.ssn__ data set are missing. Therefore, that entire column was removed.
+```{r}
+# show NA percentages per column
+# data - a data frame
+show.na.pct = function(data) {
+  na.vals = apply(data, 2, function(x) mean(is.na(x)))
+  data.frame(na.vals)
+}
+
+print("percentage of NA values in reg.ssn")
+show.na.pct(reg.ssn) * 100
+reg.ssn[['nba_finals_appearance']] = NULL # remove nba_finals_appearance column
+
+print("percentage of NA values in champs")
+show.na.pct(champs) * 100
+champs = na.omit(champs)
+
+print("percentage of NA values in r.ups")
+show.na.pct(r.ups) * 100
+r.ups = na.omit(r.ups)
+```
+
+
 ### Preprocessing / Cleaning
+Here, we renamed the column names in the __reg.ssn__ data set to match the column names in the __champs/r.ups__ data set. We also fixed some spelling errors in some columns as well as created a new column __ot__ in the __champs/r.ups__ data set that would indicate whether a game went into overtime or not (true if value in the __minutes played (mp)__ column > 240).
 ```{r}
 names(reg.ssn) = tolower(names(reg.ssn))
 names(champs) = tolower(names(champs))
 names(r.ups) = tolower(names(r.ups))
+
+# columns not needed
+champs[['x']] = NULL
+r.ups[['y']] = NULL
+
 
 # change reg.ssn column names to match champs and r.ups column names
 names(reg.ssn)[3] = 'team'
@@ -42,37 +72,25 @@ unique(champs$team)
 champs$team[champs$team == '\'Heat\''] = 'Heat'
 champs$team[champs$team == 'Warriorrs'] = 'Warriors'
 champs$team = factor(champs$team)
+
+# new column 'ot' to indicate whether game went into overtime
+# 'ot' = 1 if 'mp' > 240; else 0
+champs$ot = FALSE
+champs$ot[champs$mp > 240] = TRUE
+r.ups$ot = FALSE
+r.ups$ot[r.ups$mp > 240] = TRUE
+champs[['mp']] = NULL
+r.ups[['mp']] = NULL
 ```
 
-
-### Missing Data
-90% of the values in the __nba_finals_appearance__ column in the __reg.ssn__ data set are missing. Therefore, that entire column was removed.
-```{r}
-# show NA percentages per column
-# data - a data frame
-show.na.pct = function(data) {
-  na.vals = apply(data, 2, function(x) mean(is.na(x)))
-  data.frame(na.vals)
-}
-
-print("percentage of NA values in reg.ssn")
-show.na.pct(reg.ssn)
-reg.ssn[['nba_finals_appearance']] = NULL # remove nba_finals_appearance column
-
-print("percentage of NA values in champs")
-show.na.pct(champs)
-
-print("percentage of NA values in r.ups")
-show.na.pct(r.ups)
-
-
-diff.cols = setdiff(names(reg.ssn), names(champs))
-diff.cols # show different columns
-# TODO: remove unneeded columns from reg.ssn
-# reg.ssn[diff.cols] = NULL # remove different columns
-```
 ### Analysis / Visualization
 ```{r}
+cols = c('game', 'win', 'home', 'fg', 'tp', 'ft', 'orb', 'drb', 'ast', 'stl', 'blk', 'tov', 'pf', 'pts', 'ot')
+plot(champs[champs$win == 1, cols]) # correlation between wins + other columns
+plot(r.ups[r.ups$win == 0, cols]) # correlation between losses + other columns
+
+cols = c('gp', 'wins', 'losses', 'po_wins', 'po_losses', 'fg', 'tp', 'ft', 'orb', 'drb', 'ast', 'stl', 'tov', 'blk', 'pts')
+plot(reg.ssn[reg.ssn$po_wins >= 1, cols])
 ```
 
 ### Conclusion
