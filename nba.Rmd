@@ -112,18 +112,54 @@ plot(champs[, cols]) # correlation between wins + other columns
 tr_rows = sample(1:nrow(champs), .75*nrow(champs))
 tr_dat = champs[tr_rows,]
 te_dat = champs[-tr_rows,]
-lg.fit = glm(win ~ fg + tp + ft + orb + drb, data=tr_dat, family=binomial)
-summary(lg.fit)
+lg.fit1 = glm(win ~ fg + tp + ft + orb + drb, data=tr_dat, family=binomial)
+summary(lg.fit1)
 
 actual = te_dat$win
-predicted = predict(lg.fit, newdata=te_dat, type='response')
-thresh = 0.75 
-predicted = as.numeric(predicted > thresh)
-table(actual, predicted)
+predicted1 = predict(lg.fit1, newdata=te_dat, type='response')
 ```
 
 ### Logistic Regression 2
 ```{r}
+lg.fit2 = glm(win ~ ast + stl + blk + tov, data=tr_dat, family=binomial)
+summary(lg.fit2)
+
+predicted2 = predict(lg.fit2, newdata=te_dat, type='response')
 ```
+
+### Model Assessment: Precision, Recall, and ROC Curves
+```{r}
+thresh = seq(0, 1, length.out=50) # sequence of threshold values
+tpr1 = c() # true positive rate
+tpr2 = c()
+fpr1 = c() # false positive rate
+fpr2 = c()
+precision1 = c() # precision
+precision2 = c()
+
+for(t in thresh) {
+  # model 1
+  predicted1 = as.numeric(predicted1 > t)
+  precision1 = c(precision1, sum(predicted1 & actual)/sum(predicted1))
+  tpr1 = c(tpr1, sum(predicted1 & actual)/sum(actual))
+  fpr1 = c(fpr1, sum(predicted1 == 1 & actual == 0)/sum(actual == 0))
+  
+  # model 2
+  predicted2 = as.numeric(predicted2 > t)
+  precision2 = c(precision2, sum(predicted2 & actual)/sum(predicted2))
+  tpr2 = c(tpr2, sum(predicted2 & actual)/sum(actual))
+  fpr2 = c(fpr2, sum(predicted2 == 1 & actual == 0)/sum(actual == 0))
+}
+```
+
+```{r}
+# precision by threshold
+plot(thresh, precision1, col='red4', type="l", main='precision by threshold', xlab="thresh", ylab="precision", ylim=c(0.68, 0.75))
+par(new=T)
+plot(thresh, precision2, col='cornflowerblue', type='l', xlab="thresh", ylab="precision")
+legend("topleft", fill=c('red4', 'cornflowerblue'), legend=c('model 1', 'model 2'))
+grid()
+```
+
 
 ### Conclusion
