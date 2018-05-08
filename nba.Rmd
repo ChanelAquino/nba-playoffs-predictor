@@ -256,6 +256,7 @@ library(rpart.plot)
 library(maptree)
 library(caret)
 
+reg.ssn$win = ifelse(reg.ssn$win_pct < 0.5 ,0,1)
 regularSeason = reg.ssn
 ```
 
@@ -270,7 +271,7 @@ plot(x,las=3,type='s',xlab=" ",ylab="Total Number of Wins", main="Total Number o
 
 Some Important attributes from data set
 ```{r}
-cols = c('wins','losses', 'ft', 'orb', 'drb', 'ast', 'stl', 'blk', 'tov', 'pts')
+cols = c('win','losses', 'ft', 'orb', 'drb', 'ast', 'stl', 'blk', 'tov', 'pts')
 plot(regularSeason[,cols])
 
 cor(regularSeason[,cols])
@@ -282,7 +283,9 @@ tr_rows = sample(1:nrow(regularSeason), .75*nrow(regularSeason))
 tr_dat = regularSeason[tr_rows,]
 te_dat = regularSeason[-tr_rows,]
 
-treeFit = rpart(win ~ gp + po_wins + pts,data=tr_dat, method="class")
+treeFit = rpart(win ~ gp + po_wins + pts + + ast,data=tr_dat, method="class")
+
+#treeFit = rpart(win ~ fg + tp + ft + ast, data=tr_dat, method="class")
 
 prp(treeFit, extra=106, varlen=5,
  main="Classification Tree for NBA Teams",
@@ -292,13 +295,17 @@ prp(treeFit, extra=106, varlen=5,
 
 ###Classifying Test Data
 ```{r}
-predicted = predict(treeFit, te_dat, type="class")
-actuals = te_dat$wins
 
-confusion_matrix = table(actuals, predicted)
+predicted = predict(treeFit, te_dat, type="prob")
+predictors = as.data.frame(predicted)
+names(predictors) = c("zero","one")
+y = predictors$one
+predicts = as.numeric(y > 0.5)
+actuals = te_dat$win
+confusion_matrix=table(actuals, predicts)
 confusion_matrix
 
- succ_rate = mean(predicted == actuals)
+ succ_rate = mean(predicts == actuals)
  round(succ_rate, 3)
 ```
 
